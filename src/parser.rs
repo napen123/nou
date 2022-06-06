@@ -183,8 +183,26 @@ where
             Err(_) => panic!("WOO!"),
         },
 
-        BuiltinReference::Increment => Builtin::Increment,
-        BuiltinReference::Decrement => Builtin::Decrement,
+        BuiltinReference::Add => match parse_value(iterator) {
+            Ok(value) => {
+                if let Value::Variable(_) = value {
+                    panic!("WOO!")
+                } else {
+                    Builtin::Add(value)
+                }
+            }
+            Err(_) => panic!("WOO!"),
+        },
+        BuiltinReference::Subtract => match parse_value(iterator) {
+            Ok(value) => {
+                if let Value::Variable(_) = value {
+                    panic!("WOO!")
+                } else {
+                    Builtin::Subtract(value)
+                }
+            }
+            Err(_) => panic!("WOO!"),
+        },
         BuiltinReference::Read => Builtin::Read,
         BuiltinReference::Write => Builtin::Write,
         BuiltinReference::IfZero => Builtin::IfZero,

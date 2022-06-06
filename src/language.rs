@@ -7,8 +7,8 @@ pub enum BuiltinReference {
     Restore,
     Hint,
 
-    Increment,
-    Decrement,
+    Add,
+    Subtract,
     Read,
     Write,
     IfZero,
@@ -27,8 +27,8 @@ impl TryFrom<&str> for BuiltinReference {
             "restore" => Self::Restore,
             "hint" => Self::Hint,
 
-            "inc" => Self::Increment,
-            "dec" => Self::Decrement,
+            "add" => Self::Add,
+            "sub" => Self::Subtract,
             "read" => Self::Read,
             "write" => Self::Write,
             "ifz" => Self::IfZero,
@@ -62,8 +62,8 @@ pub enum Builtin {
     Restore,
     Hint(Value),
 
-    Increment,
-    Decrement,
+    Add(Value),
+    Subtract(Value),
     Read,
     Write,
     IfZero,
@@ -73,6 +73,7 @@ pub enum Builtin {
 #[derive(Debug)]
 pub enum Directive {
     Parameter(usize),
+    // TODO: Define(String, Value),
     Macro,
     Include,
 }

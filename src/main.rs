@@ -1,7 +1,9 @@
 mod compiler;
 mod language;
 mod lexer;
+mod logger;
 mod parser;
+mod verifier;
 
 fn main() {
     let tokens = lexer::lex_file("test.nou").unwrap();

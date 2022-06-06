@@ -1,12 +1,12 @@
 ( BASELINE )
 @macro inc 1 {
 	__move @0
-	__inc
+	__add 1
 }
 
 @macro dec 1 {
 	__move @0
-	__dec
+	__sub 1
 }
 
 @macro set 2 {
@@ -19,6 +19,7 @@
 	set @0 0
 }
 
+(
 ( LOOPS )
 @macro start_loop 1 {
 	__move @0
@@ -96,6 +97,35 @@
 	__restore
 }
 
+( BOOLEAN )
+@macro equ 2 {
+    __mark
+    new temp0
+    new temp1
+
+    start_loop @0
+        inc temp1
+    end_loop_dec @1
+
+    __inc
+
+    start_loop @1
+        dec temp1
+        inc temp0
+    end_loop_dec @1
+
+    start_loop temp0
+        inc @1
+    end_loop_dec temp0
+
+    start_loop temp1
+        dec @0
+        set temp1 0
+    end_loop temp1
+
+    __restore
+}
+
 ( MEMORY )
 @macro copy 2 {
 	set @0 0
@@ -138,5 +168,8 @@ set b 66
 
 swap a b
 
+equ a b
+add a 65
 emit a
-emit b
+(emit b)
+)

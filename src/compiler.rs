@@ -195,11 +195,27 @@ impl Compiler {
                 }
             }
 
-            Builtin::Increment => {
-                self.increment();
+            Builtin::Add(value) => {
+                let value = resolve_value(value, values).unwrap();
+
+                if let Value::Literal(literal) = value {
+                    self.add(literal);
+                } else {
+                    // SAFETY: The value has already been resolved,
+                    // and the parser ensures that it's the correct type.
+                    unreachable!()
+                }
             }
-            Builtin::Decrement => {
-                self.decrement();
+            Builtin::Subtract(value) => {
+                let value = resolve_value(value, values).unwrap();
+
+                if let Value::Literal(literal) = value {
+                    self.subtract(literal);
+                } else {
+                    // SAFETY: The value has already been resolved,
+                    // and the parser ensures that it's the correct type.
+                    unreachable!()
+                }
             }
             Builtin::Read => {
                 self.read();
@@ -287,14 +303,16 @@ impl Compiler {
         self.known_zeros.insert(location);
     }
 
-    fn increment(&mut self) {
+    fn add(&mut self, amount: usize) {
         self.taint();
-        self.brainfuck.push(Brainfuck::Increment);
+        self.brainfuck
+            .extend(iter::repeat(Brainfuck::Increment).take(amount % 0xFF));
     }
 
-    fn decrement(&mut self) {
+    fn subtract(&mut self, amount: usize) {
         self.taint();
-        self.brainfuck.push(Brainfuck::Decrement);
+        self.brainfuck
+            .extend(iter::repeat(Brainfuck::Decrement).take(amount % 0xFF));
     }
 
     fn read(&mut self) {
