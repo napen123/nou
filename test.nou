@@ -1,0 +1,142 @@
+( BASELINE )
+@macro inc 1 {
+	__move @0
+	__inc
+}
+
+@macro dec 1 {
+	__move @0
+	__dec
+}
+
+@macro set 2 {
+	__move @0
+	__set @1
+}
+
+@macro new 1 {
+	__allocate @0
+	set @0 0
+}
+
+( LOOPS )
+@macro start_loop 1 {
+	__move @0
+	__ifz
+}
+
+@macro end_loop 1 {
+	__ifnz
+	__hint @0
+}
+
+@macro end_loop_inc 1 {
+	inc @0
+	__ifnz
+	__hint @0
+}
+
+@macro end_loop_dec 1 {
+	dec @0
+	__ifnz
+	__hint @0
+}
+
+( ARITHMETIC )
+@macro add_transfer 2 {
+	start_loop @1
+		inc @0
+	end_loop_dec @1
+}
+
+@macro sub_transfer 2 {
+	start_loop @1
+		dec @0
+	end_loop_dec @1
+}
+
+@macro add 2 {
+	__mark
+	new temp
+	
+	start_loop @1
+		inc @0
+		inc temp
+	end_loop_dec @1
+	
+	add_transfer @1 temp
+	
+	__restore
+}
+
+@macro sub 2 {
+	__mark
+	new temp
+	
+	start_loop @1
+		dec @0
+		inc temp
+	end_loop_dec @1
+	
+	add_transfer @1 temp
+	
+	__restore
+}
+
+@macro negate 1 {
+	__mark
+	new temp
+	
+	sub_transfer temp @0
+	
+	start_loop temp
+		dec @0
+	end_loop_inc temp
+	
+	__restore
+}
+
+( MEMORY )
+@macro copy 2 {
+	set @0 0
+	add @0 @1
+}
+
+@macro transfer 2 {
+	set @0 0
+	add_transfer @0 @1
+}
+
+@macro swap 2 {
+	__mark
+	new temp
+	
+	add_transfer temp @0
+	add_transfer @0 @1
+	add_transfer @1 temp
+	
+	__restore
+}
+
+( IO )
+@macro fetch 1 {
+	__move @0
+	__read
+}
+
+@macro emit 1 {
+	__move @0
+	__write
+}
+
+( TEST )
+__allocate a
+set a 65
+
+__allocate b
+set b 66
+
+swap a b
+
+emit a
+emit b
