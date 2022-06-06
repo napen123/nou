@@ -162,6 +162,16 @@ where
             }
             Err(_) => panic!("WOO!"),
         },
+        BuiltinReference::Reserve => match parse_value(iterator) {
+            Ok(value) => {
+                if let Value::Variable(_) = value {
+                    panic!("WOO!")
+                } else {
+                    Builtin::Reserve(value)
+                }
+            }
+            Err(_) => panic!("WOO!"),
+        },
         BuiltinReference::Set => match parse_value(iterator) {
             Ok(value) => {
                 if let Value::Variable(_) = value {
@@ -199,6 +209,26 @@ where
                     panic!("WOO!")
                 } else {
                     Builtin::Subtract(value)
+                }
+            }
+            Err(_) => panic!("WOO!"),
+        },
+        BuiltinReference::Left => match parse_value(iterator) {
+            Ok(value) => {
+                if let Value::Variable(_) = value {
+                    panic!("WOO!")
+                } else {
+                    Builtin::Left(value)
+                }
+            }
+            Err(_) => panic!("WOO!"),
+        },
+        BuiltinReference::Right => match parse_value(iterator) {
+            Ok(value) => {
+                if let Value::Variable(_) = value {
+                    panic!("WOO!")
+                } else {
+                    Builtin::Right(value)
                 }
             }
             Err(_) => panic!("WOO!"),

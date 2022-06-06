@@ -86,9 +86,13 @@ pub fn lex_file(filename: &str) -> Result<Vec<Token>, ()> {
                     _ if is_identifier_head(c) => match lex_identifier(&mut iterator, Some(c)) {
                         Ok(identifier) => {
                             if identifier.starts_with("__") {
-                                match BuiltinReference::try_from(&identifier[2..]) {
-                                    Ok(builtin) => Token::Builtin(builtin),
-                                    Err(_) => Token::Identifier(identifier),
+                                if identifier.len() > 2 {
+                                    match BuiltinReference::try_from(&identifier[2..]) {
+                                        Ok(builtin) => Token::Builtin(builtin),
+                                        Err(_) => Token::Identifier(identifier),
+                                    }
+                                } else {
+                                    panic!("WOO!")
                                 }
                             } else {
                                 Token::Identifier(identifier)

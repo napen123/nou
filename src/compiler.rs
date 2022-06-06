@@ -94,12 +94,6 @@ impl Compiler {
         passed_values: Option<&ValueList>,
     ) -> Result<(), ()> {
         if let Some(macro_data) = macros.get(macro_name) {
-            /*println!(
-                "{} {:?}",
-                macro_name,
-                &macro_values.values[0..macro_values.length]
-            );*/
-
             match resolve_values(macro_values, passed_values) {
                 Ok(resolved_values) => {
                     if let Err(_) = self.build_instructions(
@@ -129,6 +123,17 @@ impl Compiler {
                         Ok(_) => {}
                         Err(_) => panic!("WOO!"),
                     }
+                } else {
+                    // SAFETY: The value has already been resolved,
+                    // and the parser ensures that it's the correct type.
+                    unreachable!()
+                }
+            }
+            Builtin::Reserve(value) => {
+                let value = resolve_value(value, values).unwrap();
+
+                if let Value::Literal(literal) = value {
+                    self.reserve(literal);
                 } else {
                     // SAFETY: The value has already been resolved,
                     // and the parser ensures that it's the correct type.
@@ -217,6 +222,30 @@ impl Compiler {
                     unreachable!()
                 }
             }
+            Builtin::Left(value) => {
+                let value = resolve_value(value, values).unwrap();
+
+                if let Value::Literal(literal) = value {
+                    if let Err(_) = self.left(literal) {
+                        panic!("WOO!")
+                    }
+                } else {
+                    // SAFETY: The value has already been resolved,
+                    // and the parser ensures that it's the correct type.
+                    unreachable!()
+                }
+            }
+            Builtin::Right(value) => {
+                let value = resolve_value(value, values).unwrap();
+
+                if let Value::Literal(literal) = value {
+                    self.right(literal);
+                } else {
+                    // SAFETY: The value has already been resolved,
+                    // and the parser ensures that it's the correct type.
+                    unreachable!()
+                }
+            }
             Builtin::Read => {
                 self.read();
             }
@@ -239,7 +268,6 @@ impl Compiler {
             panic!("WOO!")
         } else {
             let location = self.next_allocation;
-            self.next_allocation += 1;
 
             // SAFETY: There is always an allocation stack; the top-level stack always exists.
             unsafe {
@@ -251,6 +279,11 @@ impl Compiler {
 
             Ok(())
         }
+    }
+
+    #[inline]
+    fn reserve(&mut self, amount: usize) {
+        self.next_allocation += amount;
     }
 
     fn set(&mut self, value: usize) {
@@ -265,9 +298,7 @@ impl Compiler {
         if value == 0 {
             self.known_zeros.insert(self.head);
         } else {
-            self.taint();
-            self.brainfuck
-                .extend(iter::repeat(Brainfuck::Increment).take(value % 0xFF));
+            self.add(value);
         }
     }
 
@@ -315,6 +346,23 @@ impl Compiler {
             .extend(iter::repeat(Brainfuck::Decrement).take(amount % 0xFF));
     }
 
+    fn left(&mut self, amount: usize) -> Result<(), ()> {
+        if amount <= self.head {
+            self.brainfuck
+                .extend(iter::repeat(Brainfuck::Left).take(amount));
+            self.head -= amount;
+            Ok(())
+        } else {
+            panic!("WOO!")
+        }
+    }
+
+    fn right(&mut self, amount: usize) {
+        self.brainfuck
+            .extend(iter::repeat(Brainfuck::Right).take(amount));
+        self.head += amount;
+    }
+
     fn read(&mut self) {
         self.taint();
         self.brainfuck.push(Brainfuck::Read);
@@ -336,7 +384,7 @@ impl Compiler {
     }
 
     fn taint(&mut self) {
-        self.zero_horizon = self.head + 1;
+        self.zero_horizon = self.zero_horizon.max(self.head + 1);
         self.known_zeros.remove(&self.head);
     }
 
@@ -368,6 +416,7 @@ impl Compiler {
     fn save(self, filename: &str) -> Result<(), ()> {
         match File::create(filename) {
             Ok(file) => {
+                let mut char_count = 0;
                 let mut writer = BufWriter::new(file);
 
                 for instruction in self.brainfuck {
@@ -383,7 +432,17 @@ impl Compiler {
                     };
 
                     match result {
-                        Ok(()) => {}
+                        Ok(()) => {
+                            char_count += 1;
+
+                            if char_count >= 120 {
+                                char_count = 0;
+
+                                if let Err(_) = writeln!(writer) {
+                                    panic!("WOO!")
+                                }
+                            }
+                        }
                         Err(_) => panic!("WOO!"),
                     }
                 }

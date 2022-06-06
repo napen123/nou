@@ -1,6 +1,7 @@
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum BuiltinReference {
     Allocate,
+    Reserve,
     Set,
     Move,
     Mark,
@@ -9,6 +10,8 @@ pub enum BuiltinReference {
 
     Add,
     Subtract,
+    Left,
+    Right,
     Read,
     Write,
     IfZero,
@@ -21,6 +24,7 @@ impl TryFrom<&str> for BuiltinReference {
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         Ok(match value {
             "allocate" => Self::Allocate,
+            "reserve" => Self::Reserve,
             "set" => Self::Set,
             "move" => Self::Move,
             "mark" => Self::Mark,
@@ -29,6 +33,8 @@ impl TryFrom<&str> for BuiltinReference {
 
             "add" => Self::Add,
             "sub" => Self::Subtract,
+            "left" => Self::Left,
+            "right" => Self::Right,
             "read" => Self::Read,
             "write" => Self::Write,
             "ifz" => Self::IfZero,
@@ -56,6 +62,7 @@ impl Default for Value {
 #[derive(Debug)]
 pub enum Builtin {
     Allocate(Value),
+    Reserve(Value),
     Set(Value),
     Move(Value),
     Mark,
@@ -64,6 +71,8 @@ pub enum Builtin {
 
     Add(Value),
     Subtract(Value),
+    Left(Value),
+    Right(Value),
     Read,
     Write,
     IfZero,

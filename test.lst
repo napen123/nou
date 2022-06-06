@@ -1,0 +1,18 @@
+00  AddVectorMove   0~[65, 66, 0, 0]
+01  JumpIfZero      [3
+02  AddVectorMove   0~[-1, 0, 1, 0]
+03  JumpIfNotZero   ]1
+04  Move            >1
+05  JumpIfZero      [8
+06  AddRelative     -1~+1
+07  Add             -1
+08  JumpIfNotZero   ]5
+09  Move            >1
+10  JumpIfZero      [13
+11  AddRelative     -1~+1
+12  Add             -1
+13  JumpIfNotZero   ]10
+14  Move            <2
+15  Write           .1
+16  Move            >1
+17  Write           .1
