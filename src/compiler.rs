@@ -71,30 +71,12 @@ impl Compiler {
         for instruction in instructions {
             match instruction {
                 Instruction::Builtin(builtin) => {
-                    println!("{:?}", builtin);
-
                     if let Err(_) = self.build_builtin(builtin, values) {
                         panic!("WOO!")
                     }
                 }
                 Instruction::Macro(macro_name, macro_values) => {
-                    if let Some(macro_data) = macros.get(macro_name) {
-                        println!(
-                            "{} {:?}",
-                            macro_name,
-                            &macro_values.values[0..macro_values.length]
-                        );
-
-                        // TODO: Values should be resolved here! (Instead of in builtins?)
-
-                        if let Err(_) = self.build_instructions(
-                            &macro_data.instructions,
-                            macros,
-                            Some(macro_values),
-                        ) {
-                            panic!("WOO!")
-                        }
-                    } else {
+                    if let Err(_) = self.build_macro(macro_name, macros, macro_values, values) {
                         panic!("WOO!")
                     }
                 }
@@ -104,58 +86,85 @@ impl Compiler {
         Ok(())
     }
 
+    fn build_macro(
+        &mut self,
+        macro_name: &str,
+        macros: &HashMap<String, Macro>,
+        macro_values: &ValueList,
+        passed_values: Option<&ValueList>,
+    ) -> Result<(), ()> {
+        if let Some(macro_data) = macros.get(macro_name) {
+            /*println!(
+                "{} {:?}",
+                macro_name,
+                &macro_values.values[0..macro_values.length]
+            );*/
+
+            match resolve_values(macro_values, passed_values) {
+                Ok(resolved_values) => {
+                    if let Err(_) = self.build_instructions(
+                        &macro_data.instructions,
+                        macros,
+                        Some(&resolved_values),
+                    ) {
+                        panic!("WOO!")
+                    }
+                }
+                Err(_) => panic!("WOO!"),
+            }
+        } else {
+            panic!("WOO!")
+        }
+
+        Ok(())
+    }
+
     fn build_builtin(&mut self, builtin: &Builtin, values: Option<&ValueList>) -> Result<(), ()> {
         match builtin {
             Builtin::Allocate(value) => {
-                match resolve_value(value, values) {
-                    Ok(resolved) => {
-                        if let Value::Variable(variable) = resolved {
-                            match self.allocate(variable) {
-                                Ok(_) => {}
-                                Err(_) => panic!("WOO!"),
-                            }
-                        } else {
-                            // SAFETY: The parser ensures that the value is correct.
-                            unreachable!()
-                        }
+                let value = resolve_value(value, values).unwrap();
+
+                if let Value::Variable(variable) = value {
+                    match self.allocate(&variable) {
+                        Ok(_) => {}
+                        Err(_) => panic!("WOO!"),
                     }
-                    Err(_) => panic!("WOO!"),
+                } else {
+                    // SAFETY: The value has already been resolved,
+                    // and the parser ensures that it's the correct type.
+                    unreachable!()
                 }
             }
             Builtin::Set(value) => {
-                match resolve_value(value, values) {
-                    Ok(resolved) => {
-                        if let Value::Literal(literal) = resolved {
-                            self.set(*literal);
-                        } else {
-                            // SAFETY: The parser ensures that the value is correct.
-                            unreachable!()
-                        }
-                    }
-                    Err(_) => panic!("WOO!"),
+                let value = resolve_value(value, values).unwrap();
+
+                if let Value::Literal(literal) = value {
+                    self.set(literal);
+                } else {
+                    // SAFETY: The value has already been resolved,
+                    // and the parser ensures that it's the correct type.
+                    unreachable!()
                 }
             }
             Builtin::Move(value) => {
-                match resolve_value(value, values) {
-                    Ok(resolved) => {
-                        match resolved {
-                            Value::Literal(literal) => {
-                                self.move_to(*literal);
-                            }
-                            Value::Variable(variable) => {
-                                if let Some(location) = self.variable_location(variable) {
-                                    self.move_to(location);
-                                } else {
-                                    panic!("WOO!")
-                                }
-                            }
-                            Value::Parameter(_) => {
-                                // SAFETY: All parameters have been resolved.
-                                unreachable!()
-                            }
+                let value = resolve_value(value, values).unwrap();
+
+                match value {
+                    Value::Literal(literal) => {
+                        self.move_to(literal);
+                    }
+                    Value::Variable(variable) => {
+                        if let Some(location) = self.variable_location(&variable) {
+                            self.move_to(location);
+                        } else {
+                            panic!("WOO!")
                         }
                     }
-                    Err(_) => panic!("WOO!"),
+                    Value::Parameter(_) => {
+                        // SAFETY: The value has already been resolved,
+                        // and the parser ensures that it's the correct type.
+                        unreachable!()
+                    }
                 }
             }
             Builtin::Mark => {
@@ -165,26 +174,24 @@ impl Compiler {
                 self.restore();
             }
             Builtin::Hint(value) => {
-                match resolve_value(value, values) {
-                    Ok(resolved) => {
-                        match resolved {
-                            Value::Literal(literal) => {
-                                self.hint(*literal);
-                            }
-                            Value::Variable(variable) => {
-                                if let Some(location) = self.variable_location(variable) {
-                                    self.hint(location);
-                                } else {
-                                    panic!("WOO!")
-                                }
-                            }
-                            Value::Parameter(_) => {
-                                // SAFETY: All parameters have been resolved.
-                                unreachable!()
-                            }
+                let value = resolve_value(value, values).unwrap();
+
+                match value {
+                    Value::Literal(literal) => {
+                        self.hint(literal);
+                    }
+                    Value::Variable(variable) => {
+                        if let Some(location) = self.variable_location(&variable) {
+                            self.hint(location);
+                        } else {
+                            panic!("WOO!")
                         }
                     }
-                    Err(_) => panic!("WOO!"),
+                    Value::Parameter(_) => {
+                        // SAFETY: The value has already been resolved,
+                        // and the parser ensures that it's the correct type.
+                        unreachable!()
+                    }
                 }
             }
 
@@ -370,19 +377,41 @@ impl Compiler {
     }
 }
 
-fn resolve_value<'a>(value: &'a Value, values: Option<&'a ValueList>) -> Result<&'a Value, ()> {
-    if let Value::Parameter(parameter) = value {
-        if let Some(values) = values {
-            if *parameter < values.length {
-                // SAFETY: The values.length field is at most 10.
-                unsafe { Ok(values.values.get_unchecked(*parameter)) }
+fn resolve_value(value: &Value, passed_values: Option<&ValueList>) -> Result<Value, ()> {
+    Ok(match value {
+        Value::Literal(literal) => Value::Literal(*literal),
+        Value::Parameter(parameter) => unsafe {
+            if let Some(passed_values) = passed_values {
+                let resolved_parameter = passed_values.values.get_unchecked(*parameter);
+                resolved_parameter.clone()
             } else {
                 panic!("WOO!")
             }
-        } else {
-            panic!("WOO!")
+        },
+        Value::Variable(variable) => Value::Variable(variable.clone()),
+    })
+}
+
+fn resolve_values(
+    macro_values: &ValueList,
+    passed_values: Option<&ValueList>,
+) -> Result<ValueList, ()> {
+    let mut resolved_values = ValueList {
+        length: macro_values.length,
+        values: Default::default(),
+    };
+
+    for (index, value) in macro_values.values.iter().enumerate() {
+        match resolve_value(value, passed_values) {
+            Ok(resolved_value) => {
+                // TODO: SAFETY
+                unsafe {
+                    *resolved_values.values.get_unchecked_mut(index) = resolved_value;
+                }
+            }
+            Err(_) => panic!("WOO!"),
         }
-    } else {
-        Ok(value)
     }
+
+    Ok(resolved_values)
 }

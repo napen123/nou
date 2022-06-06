@@ -39,7 +39,7 @@ impl TryFrom<&str> for BuiltinReference {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Value {
     Literal(usize),
     Parameter(usize),
@@ -114,7 +114,7 @@ pub enum Token {
     RightBrace,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct ValueList {
     pub length: usize,
     pub values: [Value; 10],
