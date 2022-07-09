@@ -1,1 +1,18 @@
+# General
+/ignore
+
+# Rust
 /target
+
+**/*.rs.bk
+
+# Jetbrains
+/.idea
+/out
+
+*.iws
+
+# Mac OS X
+.DS_Store
+.AppleDouble
+.LSOverride
